@@ -7,8 +7,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware configuration
-app.use(express.static(path.join(__dirname, '..'), {
-  index: false,
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../public'), {
   setHeaders: (res, filePath) => {
     const filename = path.basename(filePath);
     if (filename === 'package.json' || filename === 'vercel.json' || filename.startsWith('.env')) {
@@ -16,6 +16,7 @@ app.use(express.static(path.join(__dirname, '..'), {
     }
   }
 }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -32,13 +33,16 @@ function getBot() {
   }
 
   try {
-    // Only enable polling in local development, NOT on Vercel
-    // Vercel serverless functions are short-lived and polling will cause timeouts/500 errors
     const isVercel = !!process.env.VERCEL;
 
-    bot = new ZaloBot(BOT_TOKEN, {
-      polling: !isVercel
-    });
+    // Configuration for ZaloBot
+    const botOptions = {
+      polling: !isVercel,
+      // On Vercel, the filesystem is read-only. We redirect persistence to /tmp
+      filepath: isVercel ? '/tmp/zalo-bot-api.json' : 'zalo-bot-api.json'
+    };
+
+    bot = new ZaloBot(BOT_TOKEN, botOptions);
 
     if (!isVercel) {
       bot.onText(/\/start/, (msg) => {
@@ -74,13 +78,6 @@ if (!process.env.VERCEL) {
 }
 
 /**
- * ✅ HOME ROUTE
- */
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../index.html'));
-});
-
-/**
  * ✅ SEND MESSAGE ROUTE
  */
 app.post('/send-message', async (req, res) => {
@@ -110,7 +107,7 @@ app.post('/send-message', async (req, res) => {
 });
 
 /**
- * ✅ Health Check
+ * ✅ Health Check / Status
  */
 app.get('/health', (req, res) => {
   res.json({
@@ -119,6 +116,23 @@ app.get('/health', (req, res) => {
     env: process.env.VERCEL ? 'vercel' : 'local',
     bot_ready: !!bot
   });
+});
+
+/**
+ * ✅ Get Updates (Shim for compatibility)
+ */
+app.get('/get-updates', (req, res) => {
+  res.json({
+    success: true,
+    message: "Polling is handled internally by the bot library in local mode. In serverless mode, use webhooks."
+  });
+});
+
+/**
+ * ✅ FALLBACK TO SERVE index.html
+ */
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // Start Server for local development

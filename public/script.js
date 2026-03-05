@@ -134,7 +134,7 @@ function setLoading(loading, btn, result) {
 function showSuccess(result, data) {
   result.innerHTML = `
     ✅ <strong>Gửi thành công!</strong><br>
-    <small>${data.user_id_used || 'User'} đã nhận tin</small>
+    <small>${data.data?.chat_id || 'User'} đã nhận tin</small>
   `;
   result.className = 'result success';
   
