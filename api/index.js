@@ -9,8 +9,9 @@ const PORT = process.env.PORT || 3001;
 // Middleware configuration
 app.use(express.static(path.join(__dirname, '..'), {
   index: false,
-  setHeaders: (res, path) => {
-    if (path.endsWith('.json') || path.endsWith('.env')) {
+  setHeaders: (res, filePath) => {
+    const filename = path.basename(filePath);
+    if (filename === 'package.json' || filename === 'vercel.json' || filename.startsWith('.env')) {
       res.status(403).end();
     }
   }
@@ -20,45 +21,60 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 
-// Initialize Zalo Bot
+// Initialize Zalo Bot (Singleton Pattern)
 let bot;
-try {
-  if (BOT_TOKEN && BOT_TOKEN !== 'BOT_TOKEN') {
-    bot = new ZaloBot(BOT_TOKEN, {
-      polling: true
-    });
+function getBot() {
+  if (bot) return bot;
 
-    bot.onText(/\/start/, (msg, match) => {
-      bot.sendMessage(
-        msg.chat.id,
-        `Chào ${msg.from.display_name}! Tôi là chatbot!`
-      );
-    });
-
-    bot.onText(/\/echo (.+)/, (msg, match) => {
-      let message = match[1];
-      if (message) {
-        bot.sendMessage(msg.chat.id, `Bạn vừa nói: ${message}`);
-      } else {
-        bot.sendMessage(msg.chat.id, "Hãy nhập gì đó sau lệnh /echo");
-      }
-    });
-
-    bot.on("message", (msg) => {
-      console.log("Bạn vừa nhận được tin nhắn mới", msg);
-    });
-
-    console.log('✅ Zalo Bot initialized successfully');
-  } else {
-    console.warn('⚠️ BOT_TOKEN not provided or invalid. Bot features will be disabled.');
+  if (!BOT_TOKEN || BOT_TOKEN === 'BOT_TOKEN') {
+    console.warn('⚠️ BOT_TOKEN is missing or invalid.');
+    return null;
   }
-} catch (error) {
-  console.error('❌ Error initializing Zalo Bot:', error.message);
+
+  try {
+    // Only enable polling in local development, NOT on Vercel
+    // Vercel serverless functions are short-lived and polling will cause timeouts/500 errors
+    const isVercel = !!process.env.VERCEL;
+
+    bot = new ZaloBot(BOT_TOKEN, {
+      polling: !isVercel
+    });
+
+    if (!isVercel) {
+      bot.onText(/\/start/, (msg) => {
+        bot.sendMessage(msg.chat.id, `Chào ${msg.from.display_name}! Tôi là chatbot!`);
+      });
+
+      bot.onText(/\/echo (.+)/, (msg, match) => {
+        const message = match[1];
+        if (message) {
+          bot.sendMessage(msg.chat.id, `Bạn vừa nói: ${message}`);
+        }
+      });
+
+      bot.on("message", (msg) => {
+        console.log("📨 Nhận tin nhắn mới:", msg.text);
+      });
+
+      console.log('✅ Zalo Bot initialized with polling enabled (Local mode)');
+    } else {
+      console.log('✅ Zalo Bot initialized in Serverless mode (Vercel)');
+    }
+
+    return bot;
+  } catch (error) {
+    console.error('❌ Error initializing Zalo Bot:', error.message);
+    return null;
+  }
+}
+
+// Pre-initialize bot in local environment
+if (!process.env.VERCEL) {
+  getBot();
 }
 
 /**
  * ✅ HOME ROUTE
- * Explicitly serve index.html for the root path
  */
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../index.html'));
@@ -66,24 +82,23 @@ app.get('/', (req, res) => {
 
 /**
  * ✅ SEND MESSAGE ROUTE
- * Sends a text message to a specific user_id
  */
 app.post('/send-message', async (req, res) => {
   const { user_id, message } = req.body;
+  const currentBot = getBot();
 
-  if (!bot) {
-    return res.status(503).json({ error: 'Zalo Bot is not initialized' });
+  if (!currentBot) {
+    return res.status(503).json({ error: 'Zalo Bot is not configured correctly' });
   }
-
-  console.log('📤 Sending to:', user_id);
 
   if (!user_id || !message) {
     return res.status(400).json({ error: 'Missing user_id or message' });
   }
 
   try {
-    const result = await bot.sendMessage(user_id, message);
-    console.log('✅ SUCCESS:', result);
+    console.log('📤 Sending message to:', user_id);
+    const result = await currentBot.sendMessage(user_id, message);
+    console.log('✅ Message sent successfully');
     res.json({ success: true, data: result });
   } catch (error) {
     console.error('❌ ERROR sending message:', error.message);
@@ -96,13 +111,13 @@ app.post('/send-message', async (req, res) => {
 
 /**
  * ✅ Health Check
- * Basic endpoint to verify server status
  */
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
-    bot_initialized: !!bot
+    env: process.env.VERCEL ? 'vercel' : 'local',
+    bot_ready: !!bot
   });
 });
 
