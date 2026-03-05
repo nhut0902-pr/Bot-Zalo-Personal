@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Web Không Khó | Premium Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="glow-bg"></div>
+  <div class="app-wrapper">
+    <header class="premium-header">
+      <div class="container nav-flex">
+        <div class="logo-group">
+          <div class="logo-icon">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="40" height="40" rx="12" fill="url(#logo-grad)"/>
+              <path d="M12 20L18 14M12 20L18 26M28 20L22 14M28 20L22 26" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <defs>
+                <linearGradient id="logo-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#6366f1"/>
+                  <stop offset="1" stop-color="#a855f7"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <span class="logo-text">Code Web <span>Không Khó</span></span>
+        </div>
+      </div>
+    </header>
+
+    <main class="hero-section">
+      <div class="container">
+        <div class="glass-card main-card">
+          <div class="badge">Zalo API Pro v2.0</div>
+          <h1 class="main-title">Hệ Thống Gửi Tin Nhắn <span>Tự Động</span></h1>
+          <p class="desc">Giải pháp tối ưu cho doanh nghiệp vận hành trên nền tảng Zalo OA.</p>
+
+          <form id="messageForm" class="premium-form">
+            <div class="input-field">
+              <label>Đối tượng nhận (User ID)</label>
+              <div class="input-wrapper">
+                <input type="text" id="userId" placeholder="Nhập ID người dùng..." required>
+                <i class="icon-user">👤</i>
+              </div>
+            </div>
+
+            <div class="input-field">
+              <label>Nội dung thông điệp</label>
+              <div class="input-wrapper">
+                <textarea id="message" rows="4" placeholder="Viết tin nhắn của bạn ở đây..."></textarea>
+                <i class="icon-msg">💬</i>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-send">
+              <span>Gửi Ngay</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+          </form>
+
+          <div id="result" class="status-box"></div>
+        </div>
+
+        <div class="features-grid">
+          <div class="f-card">
+            <div class="f-icon">⚡</div>
+            <h3>Tốc độ</h3>
+            <p>Xử lý tin nhắn dưới 0.1s</p>
+          </div>
+          <div class="f-card">
+            <div class="f-icon">🛡️</div>
+            <h3>Bảo mật</h3>
+            <p>Mã hóa End-to-End</p>
+          </div>
+          <div class="f-card">
+            <div class="f-icon">📊</div>
+            <h3>Báo cáo</h3>
+            <p>Thống kê thời gian thực</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

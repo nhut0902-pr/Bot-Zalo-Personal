@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/send-message",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/get-updates",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/health",
+      "destination": "/api/index.js"
+    }
+  ]
+}

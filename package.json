@@ -1,10 +1,11 @@
 {
   "name": "bot-zalo-personal",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "api/index.js",
   "scripts": {
+    "start": "node api/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node --watch --env-file=.env server.js"
+    "dev": "node --watch --env-file=.env api/index.js"
   },
   "keywords": [],
   "author": "",

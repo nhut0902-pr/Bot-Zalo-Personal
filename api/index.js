@@ -4,14 +4,24 @@ const axios = require('axios');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware configuration
-app.use(express.static('public'));
+// Important for Vercel: use path.join to correctly locate the public directory
+// or serve from the root if copied (Vercel automatically serves static files from the root or public)
+app.use(express.static(path.join(__dirname, '..')));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
+
+/**
+ * ✅ HOME ROUTE
+ * Explicitly serve index.html for the root path
+ */
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
 
 /**
  * ✅ SEND MESSAGE ROUTE
@@ -22,18 +32,16 @@ app.post('/send-message', async (req, res) => {
   
   console.log('📤 Sending to:', user_id);
   
-  // Validation: Check for required fields
   if (!user_id || !message) {
     return res.status(400).json({ error: 'Missing user_id or message' });
   }
 
   try {
-    // Correct Zalo Bot API endpoint
     const sendUrl = `https://bot-api.zaloplatforms.com/bot${BOT_TOKEN}/sendMessage`;
     
     const response = await axios.post(sendUrl, {
       chat_id: user_id,
-      text: message  // Simplified message format
+      text: message
     }, {
       headers: {
         'Content-Type': 'application/json'
@@ -75,20 +83,12 @@ app.get('/get-updates', async (req, res) => {
       ...(offset && { offset: parseInt(offset) })
     });
     
-    console.log('📄 Raw response:', JSON.stringify(response.data, null, 2).slice(0, 500));
-    
-    // SAFE PARSING according to Zalo documentation
     const apiResult = response.data;
     if (!apiResult.ok) {
       throw new Error(apiResult.description || 'API returned not OK');
     }
     
-    // Ensure the result is an array before processing
     const updates = Array.isArray(apiResult.result) ? apiResult.result : [];
-    
-    console.log(`✅ ${updates.length} updates retrieved successfully`);
-    
-    // Process updates to extract unique user information
     const users = {};
     updates.forEach((update, index) => {
       try {
@@ -116,9 +116,7 @@ app.get('/get-updates', async (req, res) => {
       ok: apiResult.ok,
       total_updates: updates.length,
       users: Object.values(users),
-      // Calculate next_offset to avoid duplicate messages in next call
       next_offset: updates.length ? (updates[updates.length - 1].update_id || 0) + 1 : parseInt(offset) || 0,
-      raw_result_length: Array.isArray(apiResult.result) ? apiResult.result.length : 'not an array'
     });
     
   } catch (error) {
@@ -145,9 +143,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📡 Webhook URL: http://localhost:${PORT}/webhook`);
-  console.log(`🧪 Test UI: http://localhost:${PORT}`);
-});
+// Start Server for local development
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(`🧪 Test UI: http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
